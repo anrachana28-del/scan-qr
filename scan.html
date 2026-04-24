@@ -74,12 +74,25 @@ body{
 
 
 #reader{
-  width:280px;
-  height:280px;
-  margin:auto;
-  border:3px solid #e3e2e0;
-  border-radius:14px;
-  overflow:hidden;
+  position:relative;
+}
+
+/* 🔥 Scan line */
+.scan-line{
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:3px;
+  background:linear-gradient(90deg,transparent,#00e5ff,transparent);
+  box-shadow:0 0 10px #00e5ff;
+  display:none;
+  animation:scanMove 1.2s linear infinite;
+}
+
+@keyframes scanMove{
+  0%{ top:0; }
+  100%{ top:100%; }
 }
 
 table{
@@ -188,7 +201,6 @@ input{
 </div>
 
 <div id="reader"></div>
-
 <!-- TOTAL -->
 <div class="card">
   <p>👥 ភ្ញៀវ: <b id="totalGuest">0</b></p>
@@ -256,7 +268,7 @@ const BOT_TOKEN = "7654128263:AAG7Bfl_kPF9aOnE0hltHpCGqQlTE1H9wCg";
 const CHAT_ID = "6567570219";
 
 
-function sendToTelegram(data){
+async function sendToTelegram(data){
 
   const text =
 `🔥 <b>QR PAYMENT RECEIPT</b> 🔥
@@ -267,19 +279,49 @@ function sendToTelegram(data){
 💴 <b>KHR:</b> <code>${data.khr}៛</code>
 ━━━━━━━━━━━━━━
 ⏰ <b>Time:</b> ${new Date().toLocaleString()}
-📌 <i>Thank you for your payment</i> 🙏
 `;
 
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      chat_id: CHAT_ID,
-      text: text,
-      parse_mode: "HTML"
-    })
-  });
+  try{
+
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        chat_id: CHAT_ID,
+        text: text,
+        parse_mode: "HTML"
+      })
+    });
+
+    const result = await res.json();
+    console.log("Telegram result:", result);
+
+    if(!result.ok){
+      alert("Telegram Error: " + result.description);
+    }
+
+  }catch(err){
+    console.log("Telegram fetch failed:", err);
+    alert("Telegram network error");
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function getBestCameraId(){
 
   const cams = await Html5Qrcode.getCameras();
@@ -318,17 +360,24 @@ async function startScan(){
 
     const cameraId = await getBestCameraId();
 
+    // 🔥 stop previous camera safely
     if(cameraRunning){
-      await qr.stop().catch(()=>{});
+      await safeStop();
     }
 
     scanned = false;
     cameraRunning = true;
 
+    // 🔥 show scan animation line
+    showScanLine();
+
     await qr.start(
       cameraId,
-      { fps: 10, qrbox: 250 },
-      (decodedText)=>{
+      {
+        fps: 10,
+        qrbox: 250
+      },
+      async (decodedText)=>{
 
         // show result
         document.getElementById("result").innerText = decodedText;
@@ -336,17 +385,42 @@ async function startScan(){
         if(scanned) return;
         scanned = true;
 
-        qr.stop().catch(()=>{});
-        cameraRunning = false;
+        // 🔥 stop scan
+        await safeStop();
 
-        openModal(decodedText); // ✅ បើក form
+        // 🔥 hide scan animation
+        hideScanLine();
+
+        // open modal
+        openModal(decodedText);
+
       },
       (err)=>{}
     );
 
   }catch(e){
+    hideScanLine();
     alert("Camera Error: " + e.message);
   }
+}
+async function safeStop(){
+  try{
+    if(cameraRunning){
+      await qr.stop();
+      cameraRunning = false;
+    }
+  }catch(e){
+    cameraRunning = false;
+  }
+}
+function showScanLine(){
+  const line = document.querySelector(".scan-line");
+  if(line) line.style.display = "block";
+}
+
+function hideScanLine(){
+  const line = document.querySelector(".scan-line");
+  if(line) line.style.display = "none";
 }
 
 
