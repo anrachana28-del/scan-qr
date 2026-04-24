@@ -64,6 +64,7 @@ body{
   position:fixed;
   top:0;
   left:0;
+  size: 14px;
   width:100%;
   height:100%;
   background:rgba(0,0,0,0.4);
@@ -82,7 +83,7 @@ body{
   padding:12px;
   border-radius:10px;
   margin-bottom:10px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.1);
+  box-shadow:0 6px 15px rgba(2, 104, 138, 0.709);
 }
 
 input{
@@ -100,7 +101,9 @@ button{
   cursor:pointer;
 }
 
-.add{background:#1aa4bd;color:white;}
+.add{background:#0b8196;color:white;  box-shadow:0 3px 10px rgba(4, 74, 171, 0.596);  font-family:Khmer OS Battambang;
+
+}
 .edit{background:#ffc107;}
 .delete{background:#ff4d4d;color:white;}
 
@@ -124,64 +127,85 @@ th,td{
 
 <div class="topbar">
   <div class="menu-btn" onclick="openMenu()">☰</div>
-  <div>QR Firebase PRO MAX</div>
+  <div>គ្រប់គ្រង់ភ្ញៀវ</div>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
 <div class="sidebar" id="sidebar">
-  <a onclick="goPage('home')">🏠 Home</a>
-  <a onclick="goPage('add')">➕ Add QR</a>
-  <a onclick="goPage('list')">📋 List</a>
+  <a onclick="goPage('home')">📊 មើលទិន្នន័យ</a>
+  <a onclick="goPage('list')">📋 ចុះឈ្មោះភ្ញៀវ</a>
 
-  <a onclick="goScan()">📷 QR SCAN</a>
+  <a onclick="goScan()">📷 ស្គែនភ្ញៀវ</a>
 </div>
 
 <div class="container">
 
 <!-- DASHBOARD -->
 <div id="home" class="page">
-  <div class="card" onclick="goPage('list')" style="text-align:center;">
-    <h2>📊 Dashboard</h2>
-    <h1 id="totalQR">0</h1>
-    <p>Total QR List</p>
+
+  <h2 style="text-align:center;margin-top:10px;">📊 ទិន្នន័យសរុបរួម</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;">
+
+    <div class="card" style="text-align:center;background:#e8f1ff;color: #ab0a07;">
+      <h4>👥 ភ្ញៀវសរុប</h4>
+      <h1 id="totalQR">0</h1>
+    </div>
+     <div class="card" style="text-align:center;background:#f3e8ff;color: #0252ff">
+      <h4>👥 ភ្ញៀវចងដៃ</h4>
+      <h1 id="totalList">0</h1>
+    </div>
+
+    <div class="card" style="text-align:center;background:#e8ffe9;color: #04c544">
+      <h4>💵ដុល្លារ</h4>
+      <h1 id="totalUSD">0</h1>
+    </div>
+
+    <div class="card" style="text-align:center;background:#fff3e6;color: #a77f05">
+      <h4>💴 រៀល</h4>
+      <h1 id="totalKHR">0</h1>
+    </div>
+
+   
+
   </div>
+  
+
 </div>
 
-<!-- ADD -->
-<div id="add" class="page card">
-  
-</div>
+
 
 <!-- LIST -->
 <div id="list" class="page">
 
   <div class="card" style="display:flex;gap:10px;">
-    <input id="name" placeholder="Enter name">
-    <button class="add" onclick="addData()">Add</button>
+    <input id="name" placeholder="បញ្ជូលឈ្មះភ្ញៀវ...">
+    <button class="add" onclick="addData()">រក្សាទុក</button>
   </div>
 
   <div class="card" style="display:flex;gap:10px;">
-    <input id="search" placeholder="Search...">
+    <input id="search" placeholder="ស្វែងរក...">
 
-    <button onclick="printSelected()" style="background:#0693a3;color:white;">
-      🖨 Print
-    </button>
-
-    <button onclick="exportSelected()" style="background:#1aa4bd;color:white;">
-      📥 Export Excel
-    </button>
+   
   </div>
 
   <div class="card">
+     <button onclick="printSelected()" style="background:#9e9e9b;color:white;">
+      Print QR
+    </button>
+
+    <button onclick="exportSelected()" style="background:#05b041;color:white;">
+      📥 Export Excel
+    </button>
     <table>
       <thead>
         <tr>
           <th><input type="checkbox" onclick="toggleAll(this)"></th>
           <th>#</th>
-          <th>Name</th>
+          <th>ឈ្មោះ</th>
           <th>QR</th>
-          <th>Action</th>
+          <th>ជម្រើស</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -490,6 +514,26 @@ async function exportSelected(){
   a.download="QR_EXPORT.xlsx";
   a.click();
 }
+db.collection("qr_payments")
+.onSnapshot(snap=>{
+
+  let count = 0;
+  let totalUSD = 0;
+  let totalKHR = 0;
+
+  snap.forEach(doc=>{
+    const d = doc.data();
+
+    count++;
+    totalUSD += Number(d.usd || 0);
+    totalKHR += Number(d.khr || 0);
+  });
+
+  document.getElementById("totalList").innerText = count;
+  document.getElementById("totalUSD").innerText = totalUSD.toLocaleString();
+  document.getElementById("totalKHR").innerText = totalKHR.toLocaleString();
+
+});
 
 </script>
 
