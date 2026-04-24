@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QR Firebase PRO MAX EXPORT IMAGE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="icon" href="data:,">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+<style>
+
+body{
+  margin:0;
+  font-family:Khmer OS Battambang;
+  background:#eef4ff;
+}
+
+.topbar{
+  background:#1aa4bd;
+  color:white;
+  padding:12px;
+  display:flex;
+  align-items:center;
+}
+
+.menu-btn{
+  font-size:22px;
+  cursor:pointer;
+  margin-right:10px;
+}
+
+.sidebar{
+  position:fixed;
+  top:0;
+  left:-260px;
+  width:260px;
+  height:100%;
+  background:#111827;
+  color:white;
+  padding-top:60px;
+  transition:0.3s;
+  z-index:100;
+}
+
+.sidebar a{
+  display:block;
+  padding:12px;
+  cursor:pointer;
+  color:white;
+  text-decoration:none;
+}
+
+.sidebar a:hover{
+  background:#1aa4bd;
+}
+
+.overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.4);
+  display:none;
+  z-index:99;
+}
+
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:12px;
+}
+
+.card{
+  background:white;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+input{
+  width:100%;
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:8px;
+  border:1px solid #ddd;
+}
+
+button{
+  padding:8px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.add{background:#1aa4bd;color:white;}
+.edit{background:#ffc107;}
+.delete{background:#ff4d4d;color:white;}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:8px;
+  border-bottom:1px solid #eee;
+  font-size:14px;
+}
+
+.page{display:none;}
+
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="menu-btn" onclick="openMenu()">☰</div>
+  <div>QR Firebase PRO MAX</div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+<div class="sidebar" id="sidebar">
+  <a onclick="goPage('home')">🏠 Home</a>
+  <a onclick="goPage('add')">➕ Add QR</a>
+  <a onclick="goPage('list')">📋 List</a>
+
+  <a onclick="goScan()">📷 QR SCAN</a>
+</div>
+
+<div class="container">
+
+<!-- DASHBOARD -->
+<div id="home" class="page">
+  <div class="card" onclick="goPage('list')" style="text-align:center;">
+    <h2>📊 Dashboard</h2>
+    <h1 id="totalQR">0</h1>
+    <p>Total QR List</p>
+  </div>
+</div>
+
+<!-- ADD -->
+<div id="add" class="page card">
+  
+</div>
+
+<!-- LIST -->
+<div id="list" class="page">
+
+  <div class="card" style="display:flex;gap:10px;">
+    <input id="name" placeholder="Enter name">
+    <button class="add" onclick="addData()">Add</button>
+  </div>
+
+  <div class="card" style="display:flex;gap:10px;">
+    <input id="search" placeholder="Search...">
+
+    <button onclick="printSelected()" style="background:#0693a3;color:white;">
+      🖨 Print
+    </button>
+
+    <button onclick="exportSelected()" style="background:#1aa4bd;color:white;">
+      📥 Export Excel
+    </button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" onclick="toggleAll(this)"></th>
+          <th>#</th>
+          <th>Name</th>
+          <th>QR</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- QR MODAL -->
+<div id="qrModal" onclick="closeQR()" style="
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.7);
+  z-index:999;
+  justify-content:center;
+  align-items:center;
+">
+
+  <div onclick="event.stopPropagation()" style="background:white;padding:20px;border-radius:12px;text-align:center;">
+
+    <div id="qrBig"></div>
+    <p id="qrText" style="margin-top:10px;"></p>
+
+    <button onclick="downloadQR()" style="
+      margin-top:10px;
+      background:#1aa4bd;
+      color:white;
+      padding:8px 12px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+      📥 Download PNG
+    </button>
+
+  </div>
+
+</div>
+
+</div>
+
+<script>
+
+/* FIREBASE */
+firebase.initializeApp({
+  apiKey: "AIzaSyBuKVB0z6NVtepmjE33qXxrxs8RcmCOwd0",
+  authDomain:"create-db14a.firebaseapp.com",
+  projectId:"create-db14a"
+});
+
+const db = firebase.firestore();
+
+/* UI */
+function openMenu(){
+  sidebar.style.left="0";
+  overlay.style.display="block";
+}
+
+function closeMenu(){
+  sidebar.style.left="-260px";
+  overlay.style.display="none";
+}
+
+function goPage(p){
+  document.querySelectorAll(".page").forEach(x=>x.style.display="none");
+  document.getElementById(p).style.display="block";
+  closeMenu();
+}
+goPage("home");
+function goScan(){
+  window.location.href = "scan.html";
+}
+/* DATA */
+let dataList=[];
+let search="";
+let currentQRText="";
+
+/* ADD */
+function addData(){
+  let name=document.getElementById("name").value.trim();
+  if(!name) return;
+
+  db.collection("qrData").add({
+    name,
+    created:Date.now()
+  });
+
+  document.getElementById("name").value="";
+}
+
+/* REALTIME */
+db.collection("qrData").onSnapshot(snap=>{
+  dataList=[];
+  snap.forEach(d=>{
+    dataList.push({id:d.id,...d.data()});
+  });
+  render();
+  document.getElementById("totalQR").innerText=dataList.length;
+});
+
+/* SEARCH */
+document.getElementById("search").addEventListener("input",(e)=>{
+  search=e.target.value.toLowerCase();
+  render();
+});
+
+/* RENDER */
+function render(){
+
+  let html="";
+  let no=1;
+
+  dataList.forEach(i=>{
+    if(i.name.toLowerCase().includes(search)){
+
+      html+=`
+      <tr>
+        <td><input type="checkbox" class="cb" value="${i.id}"></td>
+        <td>${no++}</td>
+        <td>${i.name}</td>
+        <td><div id="qr-${i.id}"></div></td>
+        <td>
+          <button class="edit" onclick="edit('${i.id}','${i.name}')">✏️</button>
+          <button class="delete" onclick="del('${i.id}')">🗑</button>
+        </td>
+      </tr>`;
+    }
+  });
+
+  document.getElementById("tableBody").innerHTML=html;
+
+  setTimeout(()=>{
+    dataList.forEach(i=>{
+      let el=document.getElementById("qr-"+i.id);
+
+      if(el){
+        el.innerHTML="";
+        let div=document.createElement("div");
+
+        new QRCode(div,{
+          text:i.name,   // QR = NAME ONLY
+          width:70,
+          height:70
+        });
+
+        div.onclick=()=>showQR(i.name);
+        el.appendChild(div);
+      }
+    });
+  },100);
+}
+
+/* QR SHOW */
+function showQR(text){
+
+  currentQRText=text;
+
+  document.getElementById("qrModal").style.display="flex";
+  document.getElementById("qrBig").innerHTML="";
+  document.getElementById("qrText").innerText=text;
+
+  new QRCode(document.getElementById("qrBig"),{
+    text:text,
+    width:250,
+    height:250
+  });
+}
+
+/* DOWNLOAD */
+function downloadQR(){
+
+  let canvas=document.querySelector("#qrBig canvas");
+  if(!canvas){
+    alert("QR not ready!");
+    return;
+  }
+
+  let a=document.createElement("a");
+  a.href=canvas.toDataURL("image/png");
+  a.download=currentQRText+".png";
+  a.click();
+}
+
+function closeQR(){
+  document.getElementById("qrModal").style.display="none";
+  document.getElementById("qrBig").innerHTML="";
+}
+
+/* EDIT */
+function edit(id,name){
+  let n=prompt("Edit",name);
+  if(n){
+    db.collection("qrData").doc(id).update({name:n});
+  }
+}
+
+/* DELETE */
+function del(id){
+  if(confirm("Delete?")){
+    db.collection("qrData").doc(id).delete();
+  }
+}
+
+/* SELECT */
+function toggleAll(cb){
+  document.querySelectorAll(".cb").forEach(c=>{
+    c.checked=cb.checked;
+  });
+}
+
+function getSelected(){
+  let ids=[...document.querySelectorAll(".cb:checked")].map(x=>x.value);
+  return dataList.filter(d=>ids.includes(d.id));
+}
+
+/* PRINT */
+function printSelected(){
+
+  let items=getSelected();
+  if(!items.length) return alert("Select items");
+
+  let w=window.open("");
+
+  let html="<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:1px;font-family:Khmer OS Battambang;'>";
+
+  items.forEach(i=>{
+    html+=`
+    <div style="border:2px solid #1aa4bd;padding:10px;text-align:center;">
+      <div id="p-${i.id}"></div>
+      <div style="font-size:12px;color:#1aa4bd;">${i.name}</div>
+    </div>`;
+  });
+
+  html+="</div>";
+
+  w.document.write(html);
+
+  setTimeout(()=>{
+    items.forEach(i=>{
+      let el=w.document.getElementById("p-"+i.id);
+      new QRCode(el,{text:i.name,width:100,height:100});
+    });
+
+    setTimeout(()=>w.print(),500);
+  },300);
+}
+
+/* EXCEL */
+async function exportSelected(){
+
+  let items=getSelected();
+  if(!items.length) return alert("Select items");
+
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet("QR");
+
+  ws.columns=[
+    {header:"No"},
+    {header:"Name"},
+    {header:"QR"}
+  ];
+
+  let no=1;
+
+  for(const i of items){
+
+    let row=ws.addRow([no++,i.name,""]);
+
+    let div=document.createElement("div");
+    document.body.appendChild(div);
+    div.style.position="absolute";
+    div.style.left="-9999px";
+
+    new QRCode(div,{
+      text:i.name,
+      width:120,
+      height:120
+    });
+
+    await new Promise(r=>setTimeout(r,300));
+
+    let canvas=div.querySelector("canvas");
+
+    if(canvas){
+      let img=canvas.toDataURL("image/png");
+
+      let id=wb.addImage({
+        base64:img,
+        extension:"png"
+      });
+
+      ws.addImage(id,{
+        tl:{col:2,row:row.number-1},
+        ext:{width:80,height:80}
+      });
+    }
+
+    document.body.removeChild(div);
+  }
+
+  let buf=await wb.xlsx.writeBuffer();
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([buf]));
+  a.download="QR_EXPORT.xlsx";
+  a.click();
+}
+
+</script>
+
+</body>
+</html>
