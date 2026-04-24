@@ -273,12 +273,10 @@ const CHAT_ID = "6567570219";
 async function sendToTelegram(data){
 
   const text =
-`🔥 <b>QR PAYMENT RECEIPT</b> 🔥
-
 ━━━━━━━━━━━━━━
-👤 <b>Name:</b> ${data.name}
-💵 <b>USD:</b> <code>$${data.usd}</code>
-💴 <b>KHR:</b> <code>${data.khr}៛</code>
+👤 <b>ឈ្មោះ:</b> ${data.name}
+💵 <b>ដុល្លារ:</b> <code>$${data.usd}</code>
+💴 <b>រៀល:</b> <code>${data.khr}៛</code>
 ━━━━━━━━━━━━━━
 ⏰ <b>Time:</b> ${new Date().toLocaleString()}
 `;
