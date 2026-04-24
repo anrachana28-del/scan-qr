@@ -94,7 +94,6 @@ body{
   0%{top:0;}
   100%{top:100%;}
 }
-
 table{
   width:100%;
   border-collapse:collapse;
@@ -201,10 +200,8 @@ input{
 </div>
 
 <div id="reader">
-  <div>
-  <p id="result">—</p>
-</div>
   <div class="scan-line"></div>
+  <p id="result"></p>
 </div>
 <!-- TOTAL -->
 <div class="card">
@@ -276,10 +273,12 @@ const CHAT_ID = "6567570219";
 async function sendToTelegram(data){
 
   const text =
+`🔥 <b>QR PAYMENT RECEIPT</b> 🔥
+
 ━━━━━━━━━━━━━━
-👤 <b>ឈ្មោះ:</b> ${data.name}
-💵 <b>ដុល្លារ:</b> <code>$${data.usd}</code>
-💴 <b>រៀល:</b> <code>${data.khr}៛</code>
+👤 <b>Name:</b> ${data.name}
+💵 <b>USD:</b> <code>$${data.usd}</code>
+💴 <b>KHR:</b> <code>${data.khr}៛</code>
 ━━━━━━━━━━━━━━
 ⏰ <b>Time:</b> ${new Date().toLocaleString()}
 `;
