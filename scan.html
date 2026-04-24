@@ -91,8 +91,8 @@ body{
 }
 
 @keyframes scanMove{
-  0%{ top:0; }
-  100%{ top:100%; }
+  0%{top:0;}
+  100%{top:100%;}
 }
 
 table{
@@ -199,8 +199,12 @@ input{
     </label>
   </div>
 </div>
-
-<div id="reader"></div>
+<div class="card">
+  <p id="result">—</p>
+</div>
+<div id="reader">
+  <div class="scan-line"></div>
+</div>
 <!-- TOTAL -->
 <div class="card">
   <p>👥 ភ្ញៀវ: <b id="totalGuest">0</b></p>
@@ -407,11 +411,11 @@ async function safeStop(){
   try{
     if(cameraRunning){
       await qr.stop();
-      cameraRunning = false;
     }
   }catch(e){
-    cameraRunning = false;
+    console.log("stop error:", e);
   }
+  cameraRunning = false;
 }
 function showScanLine(){
   const line = document.querySelector(".scan-line");
@@ -445,7 +449,7 @@ function closeModal(){
 }
 
 /* SAVE */
-function save(){
+async function save(){
 
   const loading=document.getElementById("loadingOverlay");
   loading.style.display="flex";
@@ -457,25 +461,23 @@ function save(){
     time:Date.now()
   };
 
-  db.collection("qr_payments").add(data)
-  .then(()=>{
+  try{
 
-    sendToTelegram(data);
+    await db.collection("qr_payments").add(data);
+
+    await sendToTelegram(data);
 
     modal.style.display="none";
 
-    if(cameraRunning){
-      qr.stop().catch(()=>{});
-      cameraRunning=false;
-    }
+    await safeStop();
 
     setTimeout(()=>location.reload(),800);
 
-  })
-  .catch(err=>{
-    loading.style.display="none";
+  }catch(err){
     alert(err);
-  });
+  }finally{
+    loading.style.display="none";
+  }
 }
 
 /* REALTIME + TOTAL */
