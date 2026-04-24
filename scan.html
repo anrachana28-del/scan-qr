@@ -258,9 +258,11 @@ firebase.initializeApp({
 
 const db = firebase.firestore();
 const qr = new Html5Qrcode("reader");
-const scanSound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
-scanSound.preload = "auto";
 
+// 🔊 SOUND HERE 👇
+let scanSound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+scanSound.preload = "auto";
+scanSound.volume = 1;
 const modal = document.getElementById("modal");
 const nameInput = document.getElementById("name");
 const usdInput = document.getElementById("usd");
@@ -345,14 +347,11 @@ function goBack(){
 function clean(t){
   return (t||"").replace(/[\uFFFD�]/g,"").trim();
 }
-
-/* SCAN */
 async function startScan(){
   try{
 
     const cameraId = await getBestCameraId();
 
-    // 🔥 stop previous camera safely
     if(cameraRunning){
       await safeStop();
     }
@@ -360,32 +359,32 @@ async function startScan(){
     scanned = false;
     cameraRunning = true;
 
-    // 🔥 show scan animation line
     showScanLine();
+
+    // 🔥 ដាក់ទីនេះ (UNLOCK SOUND)
+    scanSound.play().then(()=>{
+      scanSound.pause();
+      scanSound.currentTime = 0;
+    });
 
     await qr.start(
       cameraId,
-      {
-        fps: 10,
-        qrbox: 250
-      },
+      { fps: 10, qrbox: 250 },
       async (decodedText)=>{
-       scanSound.currentTime = 0;
-       scanSound.play().catch(()=>{});
-       navigator.vibrate?.(150); // optional
-        // show result
+
+        // 🔊 sound ពេល scan ជោគជ័យ
+        scanSound.currentTime = 0;
+        scanSound.play().catch(()=>{});
+
+        navigator.vibrate?.(150);
+
         document.getElementById("result").innerText = decodedText;
 
         if(scanned) return;
         scanned = true;
 
-        // 🔥 stop scan
         await safeStop();
-
-        // 🔥 hide scan animation
         hideScanLine();
-
-        // open modal
         openModal(decodedText);
 
       },
