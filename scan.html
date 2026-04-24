@@ -258,6 +258,8 @@ firebase.initializeApp({
 
 const db = firebase.firestore();
 const qr = new Html5Qrcode("reader");
+const scanSound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+scanSound.preload = "auto";
 
 const modal = document.getElementById("modal");
 const nameInput = document.getElementById("name");
@@ -310,21 +312,6 @@ async function sendToTelegram(data){
     alert("Telegram network error");
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 async function getBestCameraId(){
@@ -383,7 +370,9 @@ async function startScan(){
         qrbox: 250
       },
       async (decodedText)=>{
-
+       scanSound.currentTime = 0;
+       scanSound.play().catch(()=>{});
+       navigator.vibrate?.(150); // optional
         // show result
         document.getElementById("result").innerText = decodedText;
 
