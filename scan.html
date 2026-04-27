@@ -27,8 +27,8 @@ body{
 
 .card{
   background:#fff;
-  margin:8px;
-  padding:8px;
+  margin:10px;
+  padding:10px;
   border-radius:14px;
   box-shadow:0 6px 15px rgba(2, 104, 138, 0.709);
 }
@@ -76,52 +76,24 @@ body{
 
 #reader{
   position:relative;
-  overflow:hidden;
-}
-/* 🔴 floating close button */
-#closeScanBtn{
-  position:absolute;
-  top:10px;
-  right:10px;
-
-  padding:8px 12px;
-  border:none;
-  border-radius:8px;
-
-  background:#ff4d4d;
-  color:white;
-  font-weight:bold;
-
-  display:none;
-  z-index:9999;
-  box-shadow:0 3px 10px rgba(0,0,0,0.3);
 }
 
-
-/* 🔴 scan line */
+/* 🔥 Scan line */
 .scan-line{
   position:absolute;
   left:0;
+  top:0;
   width:100%;
   height:3px;
-
-  background:linear-gradient(90deg, transparent, #00e5ff, transparent);
+  background:linear-gradient(90deg,transparent,#00e5ff,transparent);
   box-shadow:0 0 10px #00e5ff;
-
   display:none;
-  z-index:10;
-
-  animation: scanMove 1.2s linear infinite;
+  animation:scanMove 1.2s linear infinite;
 }
 
-/* 🔥 smooth top → bottom movement */
 @keyframes scanMove{
-  0%{
-    top:0%;
-  }
-  100%{
-    top:100%;
-  }
+  0%{top:0;}
+  100%{top:100%;}
 }
 table{
   width:150%;
@@ -245,7 +217,7 @@ input:focus{
   <div class="row">
     <button class="home-btn" onclick="goBack()">ត្រឡប</button>
 
-  <button class="btn scan" onclick="startScan()">
+<button class="btn scan" onclick="startScan()">
   <img src="image.png" alt="scan" style="width:40px;height:40px;">
   
 
@@ -263,10 +235,7 @@ input:focus{
 </div>
 <div id="reader">
   <div class="scan-line"></div>
- <!-- 🔴 CLOSE BUTTON OVER CAMERA -->
-  <button id="closeScanBtn" onclick="stopScan()">
-    ❌ Close
-  </button>
+ 
 </div>
 <!-- TOTAL -->
 <div class="card">
@@ -352,6 +321,7 @@ const modal = document.getElementById("modal");
 const nameInput = document.getElementById("name");
 const usdInput = document.getElementById("usd");
 const khrInput = document.getElementById("khr");
+const noteInput = document.getElementById("note"); // ✅ add this
 const tableBody = document.getElementById("tableBody");
 
 let scanned = false;
@@ -524,21 +494,15 @@ async function safeStop(){
   cameraRunning = false;
 }
 function showScanLine(){
-  document.querySelector(".scan-line").style.display = "block";
-  document.getElementById("closeScanBtn").style.display = "block";
+  const line = document.querySelector(".scan-line");
+  if(line) line.style.display = "block";
 }
 
 function hideScanLine(){
-  document.querySelector(".scan-line").style.display = "none";
-  document.getElementById("closeScanBtn").style.display = "none";
+  const line = document.querySelector(".scan-line");
+  if(line) line.style.display = "none";
 }
-async function stopScan(){
-  await safeStop();
-  hideScanLine();
-  scanned = true;
 
-  document.getElementById("result").innerText = "⛔ Scan stopped";
-}
 
 
 /* IMAGE */
