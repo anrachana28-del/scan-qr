@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 body{
   margin:0;
@@ -26,8 +27,8 @@ body{
 
 .card{
   background:#fff;
-  margin:10px;
-  padding:10px;
+  margin:8px;
+  padding:8px;
   border-radius:14px;
   box-shadow:0 6px 15px rgba(2, 104, 138, 0.709);
 }
@@ -75,30 +76,73 @@ body{
 
 #reader{
   position:relative;
+  overflow:hidden;
+}
+/* 🔴 floating close button */
+#closeScanBtn{
+  position:absolute;
+  top:10px;
+  right:10px;
+
+  padding:8px 12px;
+  border:none;
+  border-radius:8px;
+
+  background:#ff4d4d;
+  color:white;
+  font-weight:bold;
+
+  display:none;
+  z-index:9999;
+  box-shadow:0 3px 10px rgba(0,0,0,0.3);
 }
 
-/* 🔥 Scan line */
+
+/* 🔴 scan line */
 .scan-line{
   position:absolute;
   left:0;
-  top:0;
   width:100%;
   height:3px;
-  background:linear-gradient(90deg,transparent,#00e5ff,transparent);
+
+  background:linear-gradient(90deg, transparent, #00e5ff, transparent);
   box-shadow:0 0 10px #00e5ff;
+
   display:none;
-  animation:scanMove 1.2s linear infinite;
+  z-index:10;
+
+  animation: scanMove 1.2s linear infinite;
 }
 
+/* 🔥 smooth top → bottom movement */
 @keyframes scanMove{
-  0%{top:0;}
-  100%{top:100%;}
+  0%{
+    top:0%;
+  }
+  100%{
+    top:100%;
+  }
 }
 table{
-  width:100%;
+  width:150%;
   border-collapse:collapse;
 }
+.table-scroll{
+  max-height:450px;
+  overflow-y: auto;
+  overflow-x: auto;
+  margin-top:10px;
+  border-radius:10px;
+}
 
+/* ✅ ដាក់នៅ table */
+.table-scroll table{
+  min-width: 600px; /* 👉 បង្ខំ scroll */
+}
+/* Hover row */
+tbody tr:hover{
+  background:#f1f7ff;
+}
 th{
   background:#1aa4bd;
   color:#fff;
@@ -107,7 +151,7 @@ th{
 
 td{
   padding:8px;
-  border-bottom:2px solid #07567e76;
+  border-bottom:1px solid #a1c9dd76;
 }
 
 .ok{
@@ -138,6 +182,15 @@ input{
   margin-top:5px;
   border:1px solid #ddd;
   border-radius:8px;
+
+  font-size:16px; /* 🔥 IMPORTANT: stop mobile zoom */
+  outline:none;
+}
+
+/* focus style */
+input:focus{
+  border-color:#0d6efd;
+  box-shadow:0 0 6px rgba(13,110,253,0.3);
 }
 
 .save{
@@ -154,7 +207,7 @@ input{
   background:#ff4d4d;
   color:#fff;
   border:none;
-  width:100%;
+  width:30%;
   padding:10px;
   margin-top:5px;
   border-radius:8px;
@@ -172,7 +225,13 @@ input{
   align-items:center;
   z-index:9999;
 }
-
+.highlight{
+  background: yellow;
+  color: black;
+  padding:2px 4px;
+  border-radius:4px;
+  font-weight:bold;
+}
 #totalGuest{color:#0d6efd;font-size:18px;}
 #totalUSD{color:#28a745;font-size:18px;font-weight:bold;}
 #totalKHR{color:#ff9800;font-size:18px;font-weight:bold;}
@@ -186,7 +245,7 @@ input{
   <div class="row">
     <button class="home-btn" onclick="goBack()">ត្រឡប</button>
 
-<button class="btn scan" onclick="startScan()">
+  <button class="btn scan" onclick="startScan()">
   <img src="image.png" alt="scan" style="width:40px;height:40px;">
   
 
@@ -204,28 +263,50 @@ input{
 </div>
 <div id="reader">
   <div class="scan-line"></div>
- 
+ <!-- 🔴 CLOSE BUTTON OVER CAMERA -->
+  <button id="closeScanBtn" onclick="stopScan()">
+    ❌ Close
+  </button>
 </div>
 <!-- TOTAL -->
 <div class="card">
-  <p>👥 ភ្ញៀវចងដៃ: <b id="totalGuest">0</b></p>
+  <p>👥 ភ្ញៀវចងដៃ: <b id="totalGuest">0</b> នាក់</p>
   <p>💵 ដុល្លារ: <b id="totalUSD">0</b> $</p>
   <p>💴 រៀល: <b id="totalKHR">0</b> ៛</p>
 </div>
 
 <!-- TABLE -->
 <div class="card">
-  <h3>📋 Data</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>ឈ្មោះ</th>
-        <th>USD</th>
-        <th>KHR</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+  <div>
+  <input style="width:30%;background-color:#f3f8f9b2;color:black;font-size: 12px;"
+    type="text" id="searchBox" placeholder="🔍 ស្វែងរកឈ្មោះ..." onkeyup="searchTable()">
+  <button onclick="exportExcel()" style="
+  padding:10px 14px;
+  background:#28a745;
+  color:white;
+  border:none;
+  border-radius:8px;
+  margin:10px;
+  font-weight:bold;
+">
+📥 Export Excel
+</button>
+
+    <div class="table-scroll">
+      <table style="width:100%; min-width:700px; table-layout:fixed;">
+        <thead>
+          <tr>
+            <th style="width:20%;">ឈ្មោះ</th>
+            <th style="width:10%;">ដុល្លារ</th>
+            <th style="width:15%;">រៀល</th>
+             <th style="width:15%;">បរិច្ឆេទ</th>
+            <th style="width:35%;">ចាំណាំ</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL -->
@@ -241,6 +322,10 @@ input{
 
     <label>KHR</label>
     <input id="khr" type="number">
+
+    <!-- 🆕 Note input -->
+    <label>ចំណាំ</label>
+    <input id="note" type="text" placeholder="បញ្ចូលចំណាំ...">
 
     <button class="save" onclick="save()">💾 Save</button>
     <button class="close" onclick="closeModal()">❌ Close</button>
@@ -280,12 +365,10 @@ const CHAT_ID = "6567570219";
 async function sendToTelegram(data){
 
   const text =
-`🔥 <b>QR PAYMENT RECEIPT</b> 🔥
-
-━━━━━━━━━━━━━━
-👤 <b>Name:</b> ${data.name}
-💵 <b>USD:</b> <code>$${data.usd}</code>
-💴 <b>KHR:</b> <code>${data.khr}៛</code>
+`
+👤 <b>ឈ្មោះ:</b> ${data.name}
+💵 <b>ដុល្លារ:</b> <code>$${data.usd}</code>
+💴 <b>រៀល:</b> <code>${data.khr}៛</code>
 ━━━━━━━━━━━━━━
 ⏰ <b>Time:</b> ${new Date().toLocaleString()}
 `;
@@ -315,7 +398,41 @@ async function sendToTelegram(data){
   }
 }
 
+function searchTable(){
 
+  const input = document.getElementById("searchBox");
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll("#tableBody tr");
+
+  rows.forEach(row => {
+
+    const cell = row.cells[0]; // name column
+    const text = cell.innerText;
+
+    // reset original text (remove highlight)
+    cell.innerHTML = text;
+
+    if(filter === ""){
+      row.style.display = "";
+      return;
+    }
+
+    if(text.toLowerCase().includes(filter)){
+      row.style.display = "";
+
+      // highlight matched text
+      const regex = new RegExp(filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "gi");
+      cell.innerHTML = text.replace(regex, match => 
+        `<span class="highlight">${match}</span>`
+      );
+
+    } else {
+      row.style.display = "none";
+    }
+
+  });
+
+}
 async function getBestCameraId(){
 
   const cams = await Html5Qrcode.getCameras();
@@ -407,15 +524,21 @@ async function safeStop(){
   cameraRunning = false;
 }
 function showScanLine(){
-  const line = document.querySelector(".scan-line");
-  if(line) line.style.display = "block";
+  document.querySelector(".scan-line").style.display = "block";
+  document.getElementById("closeScanBtn").style.display = "block";
 }
 
 function hideScanLine(){
-  const line = document.querySelector(".scan-line");
-  if(line) line.style.display = "none";
+  document.querySelector(".scan-line").style.display = "none";
+  document.getElementById("closeScanBtn").style.display = "none";
 }
+async function stopScan(){
+  await safeStop();
+  hideScanLine();
+  scanned = true;
 
+  document.getElementById("result").innerText = "⛔ Scan stopped";
+}
 
 
 /* IMAGE */
@@ -431,6 +554,7 @@ function openModal(name){
   nameInput.value=clean(name);
   usdInput.value="";
   khrInput.value="";
+  noteInput.value=""; // reset note
 }
 
 function closeModal(){
@@ -443,12 +567,16 @@ async function save(){
   const loading=document.getElementById("loadingOverlay");
   loading.style.display="flex";
 
-  const data={
-    name:nameInput.value,
-    usd:Number(usdInput.value)||0,
-    khr:Number(khrInput.value)||0,
-    time:Date.now()
-  };
+const noteInput = document.getElementById("note");
+
+const data={
+  name:nameInput.value,
+  usd:Number(usdInput.value)||0,
+  khr:Number(khrInput.value)||0,
+  note:noteInput.value,
+  time:Date.now(),
+  createdAt: new Date().toLocaleString() // ✅ FIX
+};
 
   try{
 
@@ -486,13 +614,15 @@ db.collection("qr_payments")
     totalUSD+=Number(d.usd||0);
     totalKHR+=Number(d.khr||0);
 
-    html+=`
-      <tr>
-        <td class="ok">${d.name||""}</td>
-        <td>${d.usd||0} $</td>
-        <td>${d.khr||0} ៛</td>
-      </tr>
-    `;
+html+=`
+<tr>
+  <td class="ok">${d.name||""}</td>
+  <td style="color:#28a745;font-weight:bold;">${d.usd||0} $</td>
+  <td style="color:#ff9800;font-weight:bold;">${d.khr||0} ៛</td>
+  <td style="color:#6c757d;">${d.createdAt||""}</td>
+  <td style="color:#6c757d;font-size:12px">${d.note||""}</td>
+</tr>
+`;
   });
 
   tableBody.innerHTML=html;
@@ -502,6 +632,192 @@ db.collection("qr_payments")
   document.getElementById("totalKHR").innerText=totalKHR.toLocaleString();
 
 });
+
+
+async function exportExcel(){
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("INVOICE");
+
+  // ======================
+  // 🧾 TITLE
+  // ======================
+  sheet.mergeCells("A1:F1");
+  const title = sheet.getCell("A1");
+
+  title.value = "បញ្ជីចំណងដៃ";
+  title.font = {
+    name: "Khmer OS Battambang",
+    bold: true,
+    size: 18,
+    color: { argb: "FFFFFFFF" }
+  };
+
+  title.alignment = {
+    horizontal: "center",
+    vertical: "middle"
+  };
+
+  title.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1AA4BD" } // blue
+  };
+
+  // ======================
+  // HEADER ROW
+  // ======================
+  const headerRow = sheet.addRow([
+    "លេខរៀង",
+    "ឈ្មោះ",
+    "ដុល្លារ",
+    "រៀល",
+    "បរិច្ចេក",
+    "ចំណាំ"
+  ]);
+
+  headerRow.eachCell(cell=>{
+    cell.font = {
+      name: "Khmer OS Battambang",
+      bold: true,
+      color: { argb: "FFFFFFFF" }
+    };
+
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle"
+    };
+
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0D6EFD" }
+    };
+
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      right: { style: "thin" },
+      bottom: { style: "thin" }
+    };
+  });
+
+  let no = 1;
+  let totalUSD = 0;
+  let totalKHR = 0;
+  let count = 0;
+
+  const snap = await db.collection("qr_payments")
+    .orderBy("time","desc")
+    .get();
+
+  snap.forEach(doc=>{
+    const d = doc.data();
+
+    const row = sheet.addRow([
+      no++,
+      d.name || "",
+      d.usd || 0,
+      d.khr || 0,
+      d.createdAt || "",
+      d.note || ""
+    ]);
+
+    totalUSD += Number(d.usd || 0);
+    totalKHR += Number(d.khr || 0);
+    count++;
+
+    // ======================
+    // ROW STYLE (ZEBRA)
+    // ======================
+    const bg = (no % 2 === 0) ? "FFF5FAFF" : "FFFFFFFF";
+
+    row.eachCell(cell=>{
+      cell.font = { name:"Khmer OS Battambang" };
+
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: bg }
+      };
+
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+        bottom: { style: "thin" }
+      };
+    });
+  });
+
+  // ======================
+  // SUMMARY TITLE
+  // ======================
+  sheet.addRow([]);
+  const summaryTitle = sheet.addRow([" ទិន្នន័យសរុបរួម"]);
+
+  summaryTitle.font = {
+    name:"Khmer OS Battambang",
+    bold: true,
+    size: 14
+  };
+
+  summaryTitle.alignment = { horizontal:"center" };
+
+  // ======================
+  // SUMMARY DATA
+  // ======================
+  const s1 = sheet.addRow([" សរុបភ្ញៀវចងដៃ", count]);
+  const s2 = sheet.addRow([" សរុបដុល្លារ", totalUSD]);
+  const s3 = sheet.addRow([" សរុបរៀល", totalKHR]);
+
+  [s1,s2,s3].forEach(r=>{
+    r.eachCell(cell=>{
+      cell.font = { name:"Khmer OS Battambang" };
+
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF1F7FF" }
+      };
+
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+        bottom: { style: "thin" }
+      };
+    });
+  });
+
+  // ======================
+  // AUTO COLUMN WIDTH
+  // ======================
+  sheet.columns.forEach(col=>{
+    let max = 10;
+
+    col.eachCell(cell=>{
+      const len = cell.value ? cell.value.toString().length : 10;
+      if(len > max) max = len;
+    });
+
+    col.width = max + 4;
+  });
+
+  // ======================
+  // DOWNLOAD
+  // ======================
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "បញ្ជីចំណងដៃ.xlsx";
+  link.click();
+}
 </script>
 
 </body>
