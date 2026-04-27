@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>QR Firebase PRO MAX EXPORT IMAGE</title>
+<title>ប្រព័ន្ធគ្រប់គ្រងភ្ញៀវ</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="icon" href="data:,">
@@ -12,7 +12,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 
 body{
@@ -64,14 +64,61 @@ body{
   position:fixed;
   top:0;
   left:0;
-  size: 14px;
   width:100%;
   height:100%;
   background:rgba(0,0,0,0.4);
   display:none;
   z-index:99;
 }
+.title{
+  text-align:center;
+  margin:15px 0;
+  font-weight:bold;
+  color:#1aa4bd;
+}
 
+/* GRID */
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  padding:10px;
+}
+
+/* CARD STYLE */
+.box{
+  text-align:center;
+  padding:15px;
+  border-radius:14px;
+  transition:0.3s;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+}
+
+/* HOVER EFFECT */
+.box:hover{
+  transform:translateY(-5px) scale(1.02);
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* COLORS */
+.blue{ background:#e8f1ff; color:#ab0a07; }
+.purple{ background:#f3e8ff; color:#0252ff; }
+.green{ background:#e8ffe9; color:#04c544; }
+.orange{ background:#fff3e6; color:#ff9800; }
+
+/* NUMBER STYLE */
+.box h1{
+  font-size:28px;
+  margin-top:5px;
+  transition:0.3s;
+}
+
+/* SMALL ANIMATION */
+.box:hover h1{
+  transform:scale(1.1);
+}
 .container{
   max-width:900px;
   margin:auto;
@@ -87,11 +134,14 @@ body{
 }
 
 input{
-  width:100%;
+  width:95%;
   padding:10px;
-  margin-bottom:8px;
-  border-radius:8px;
+  margin-top:5px;
   border:1px solid #ddd;
+  border-radius:8px;
+
+  font-size:16px; /* 🔥 IMPORTANT: stop mobile zoom */
+  outline:none;
 }
 
 button{
@@ -109,9 +159,56 @@ button{
 
 table{
   width:100%;
+  table-layout:fixed; /* 🔥 IMPORTANT */
+}
+.table-scroll{
+  max-height: 420px;   /* 👉 កម្ពស់ list */
+  overflow-y: auto;    /* 👉 scroll លើក្រោម */
+  overflow-x: auto;    /* 👉 scroll ឆ្វេងស្តាំ */
+  border-radius:12px;
+  border:1px solid #e3e3e3;
+  background:white;
+}
+
+/* table width fix */
+.table-scroll table{
+  width:100%;
+  min-width:800px; /* 👉 បង្ខំអោយមាន horizontal scroll */
   border-collapse:collapse;
 }
 
+/* header sticky */
+.table-scroll thead th{
+  position:sticky;
+  top:0;
+  background:#1aa4bd;
+  color:white;
+  z-index:10;
+}
+
+/* row style */
+.table-scroll td,
+.table-scroll th{
+  padding:10px;
+  text-align:center;
+  border-bottom:1px solid #eee;
+}
+
+/* hover */
+.table-scroll tbody tr:hover{
+  background:#f2f9ff;
+}
+
+/* scrollbar style */
+.table-scroll::-webkit-scrollbar{
+  width:6px;
+  height:6px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb{
+  background:#1aa4bd;
+  border-radius:10px;
+}
 th,td{
   padding:8px;
   border-bottom:1px solid #eee;
@@ -119,6 +216,13 @@ th,td{
 }
 
 .page{display:none;}
+.highlight{
+  background: yellow;
+  color: black;
+  padding:2px 4px;
+  border-radius:4px;
+  font-weight:bold;
+}
 
 </style>
 </head>
@@ -144,33 +248,39 @@ th,td{
 <!-- DASHBOARD -->
 <div id="home" class="page">
 
-  <h2 style="text-align:center;margin-top:10px;">📊 ទិន្នន័យសរុបរួម</h2>
+  <h2 class="title">📊 ទិន្នន័យសរុបរួម</h2>
 
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;">
+  <div class="dashboard">
 
-    <div class="card" style="text-align:center;background:#e8f1ff;color: #ab0a07;">
+    <div class="card box blue">
       <h4>👥 ភ្ញៀវសរុប</h4>
       <h1 id="totalQR">0</h1>
     </div>
-     <div class="card" style="text-align:center;background:#f3e8ff;color: #0252ff">
+
+    <div class="card box purple">
       <h4>👥 ភ្ញៀវចងដៃ</h4>
       <h1 id="totalList">0</h1>
     </div>
 
-    <div class="card" style="text-align:center;background:#e8ffe9;color: #04c544">
-      <h4>💵ដុល្លារ</h4>
+    <div class="card box green">
+      <h4>💵 ដុល្លារ</h4>
       <h1 id="totalUSD">0</h1>
     </div>
 
-    <div class="card" style="text-align:center;background:#fff3e6;color: #a77f05">
+    <div class="card box orange">
       <h4>💴 រៀល</h4>
       <h1 id="totalKHR">0</h1>
     </div>
 
-   
-
   </div>
-  
+  <div class="card">
+<div style="width:200px; height:200px;">
+  <canvas id="pieChart"></canvas>
+</div>
+  <canvas id="barChart" height="100"></canvas>
+  <br>
+ 
+</div>
 
 </div>
 
@@ -179,18 +289,28 @@ th,td{
 <!-- LIST -->
 <div id="list" class="page">
 
-  <div class="card" style="display:flex;gap:10px;">
-    <input id="name" placeholder="បញ្ជូលឈ្មះភ្ញៀវ...">
-    <button class="add" onclick="addData()">រក្សាទុក</button>
-  </div>
+  <div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
 
-  <div class="card" style="display:flex;gap:10px;">
-    <input id="search" placeholder="ស្វែងរក...">
+  <!-- NAME -->
+  <input id="name" placeholder="បញ្ជូលឈ្មោះភ្ញៀវ..." 
+    style="flex:1;min-width:180px;">
 
-   
-  </div>
+  <!-- NOTE -->
+  <input id="note" placeholder="ចំណាំ..." 
+    style="flex:1;min-width:150px;">
 
-  <div class="card">
+  <!-- BUTTON -->
+  <button class="add" onclick="addData()" 
+    style="min-width:120px;">
+    រក្សាទុក
+  </button>
+
+</div>
+
+<div class="card">
+ <input style="width:30%;background-color:#f3f8f9b2;color:black;font-size: 12px;"
+      type="text" id="search" placeholder="🔍 ស្វែងរកឈ្មោះ..." onkeyup="searchTable()">
+        
      <button onclick="printSelected()" style="background:#9e9e9b;color:white;">
       Print QR
     </button>
@@ -198,18 +318,23 @@ th,td{
     <button onclick="exportSelected()" style="background:#05b041;color:white;">
       📥 Export Excel
     </button>
-    <table>
-      <thead>
-        <tr>
-          <th><input type="checkbox" onclick="toggleAll(this)"></th>
-          <th>#</th>
-          <th>ឈ្មោះ</th>
-          <th>QR</th>
-          <th>ជម្រើស</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+    <div class="table-scroll">
+  <table>
+    <thead>
+<tr>
+  <th style="width:5%;">
+    <input type="checkbox" onclick="toggleAll(this)">
+  </th>
+  <th style="width:10%;">ល.រ</th>
+  <th style="width:25%;">ឈ្មោះ</th>
+  <th style="width:20%;">QR</th>
+  <th style="width:22%;">ចំណាំ</th>
+  <th style="width:15%;">កំណត់</th>
+</tr>
+
+    <tbody id="tableBody"></tbody>
+  </table>
+ </div>
   </div>
 
 </div>
@@ -287,15 +412,38 @@ let currentQRText="";
 
 /* ADD */
 function addData(){
-  let name=document.getElementById("name").value.trim();
-  if(!name) return;
+
+  let name = document.getElementById("name").value.trim();
+  let note = document.getElementById("note")?.value.trim() || "";
+
+  if(!name){
+    alert("⚠️ សូមបញ្ចូលឈ្មោះ!");
+    return;
+  }
 
   db.collection("qrData").add({
-    name,
-    created:Date.now()
+    name: name,
+    note: note,
+    created: Date.now(),
+    createdAt: new Date().toLocaleString("km-KH") // ✅ readable date
+  })
+  .then(() => {
+
+    // clear input
+    document.getElementById("name").value = "";
+    if(document.getElementById("note")){
+      document.getElementById("note").value = "";
+    }
+
+    // optional success message
+    console.log("រក្សាបានជោគជ័យ!!");
+
+  })
+  .catch(err => {
+    console.error("Error saving:", err);
+    alert("រក្សាទុកមិនបាន!");
   });
 
-  document.getElementById("name").value="";
 }
 
 /* REALTIME */
@@ -306,6 +454,13 @@ db.collection("qrData").onSnapshot(snap=>{
   });
   render();
   document.getElementById("totalQR").innerText=dataList.length;
+  // CALL CHART
+renderCharts(
+  dataList.length,
+  Number(document.getElementById("totalList").innerText) || 0,
+  Number(document.getElementById("totalUSD").innerText.replace(/,/g,'')) || 0,
+  Number(document.getElementById("totalKHR").innerText.replace(/,/g,'')) || 0
+);
 });
 
 /* SEARCH */
@@ -323,17 +478,28 @@ function render(){
   dataList.forEach(i=>{
     if(i.name.toLowerCase().includes(search)){
 
-      html+=`
-      <tr>
-        <td><input type="checkbox" class="cb" value="${i.id}"></td>
-        <td>${no++}</td>
-        <td>${i.name}</td>
-        <td><div id="qr-${i.id}"></div></td>
-        <td>
-          <button class="edit" onclick="edit('${i.id}','${i.name}')">✏️</button>
-          <button class="delete" onclick="del('${i.id}')">🗑</button>
-        </td>
-      </tr>`;
+      html += `
+<tr>
+  <td><input type="checkbox" class="cb" value="${i.id}"></td>
+  <td>${no++}</td>
+  <td>${i.name}</td>
+
+  <!-- QR -->
+  <td style="text-align:center;">
+    <div id="qr-${i.id}" style="display:flex;justify-content:center;align-items:center;"></div>
+  </td>
+
+  <!-- NOTE -->
+  <td style="font-size:12px;color:#555;">
+    ${i.note || "-"}
+  </td>
+
+  <!-- ACTION -->
+  <td>
+    <button class="edit" onclick="edit('${i.id}','${i.name}')">✏️</button>
+    <button class="delete" onclick="del('${i.id}')">🗑</button>
+  </td>
+</tr>`;
     }
   });
 
@@ -396,12 +562,25 @@ function closeQR(){
   document.getElementById("qrBig").innerHTML="";
 }
 
-/* EDIT */
-function edit(id,name){
-  let n=prompt("Edit",name);
-  if(n){
-    db.collection("qrData").doc(id).update({name:n});
-  }
+function edit(id, name, note = ""){
+
+  let newName = prompt("កែឈ្មោះ", name);
+  if(newName === null) return;
+
+  let newNote = prompt("កែចំណាំ", note);
+  if(newNote === null) return;
+
+  db.collection("qrData").doc(id).update({
+    name: newName.trim(),
+    note: newNote.trim()
+  })
+  .then(()=>{
+    console.log("Updated successfully");
+  })
+  .catch(err=>{
+    alert("Error: " + err);
+  });
+
 }
 
 /* DELETE */
@@ -458,60 +637,202 @@ function printSelected(){
 /* EXCEL */
 async function exportSelected(){
 
-  let items=getSelected();
+  let items = getSelected();
   if(!items.length) return alert("Select items");
 
-  const wb=new ExcelJS.Workbook();
-  const ws=wb.addWorksheet("QR");
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("QR Invoice");
 
-  ws.columns=[
-    {header:"No"},
-    {header:"Name"},
-    {header:"QR"}
+  // ======================
+  // PAGE STYLE
+  // ======================
+  ws.properties.defaultRowHeight = 20;
+
+  ws.columns = [
+    { width: 8 },   // No
+    { width: 28 },  // Name
+    { width: 22 }   // QR
   ];
 
-  let no=1;
+  // CENTER ALL COLUMNS
+  ws.getColumn(1).alignment = { horizontal: "center", vertical: "middle" };
+  ws.getColumn(2).alignment = { horizontal: "center", vertical: "middle" };
+  ws.getColumn(3).alignment = { horizontal: "center", vertical: "middle" };
 
+  // ======================
+  // TITLE (TOP HEADER)
+  // ======================
+  const title = ws.addRow(["បញ្ជីឈ្មោះភ្ញៀវ"]);
+
+  ws.mergeCells("A1:C1");
+
+  title.font = {
+    bold: true,
+    size: 18,
+    name: "Khmer OS Battambang",
+    color: { argb: "FFFFFFFF" }
+  };
+
+  title.alignment = {
+    horizontal: "center",
+    vertical: "middle"
+  };
+
+  title.height = 35;
+
+  ws.getCell("A1").fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1AA4BD" }
+  };
+
+  // ======================
+  // HEADER ROW
+  // ======================
+  const header = ws.addRow(["លេខរៀង", "ឈ្មោះ", "QR"]);
+
+  header.height = 25;
+
+  header.font = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    name: "Khmer OS Battambang",
+    size: 12
+  };
+
+  header.alignment = {
+    horizontal: "center",
+    vertical: "middle"
+  };
+
+  header.eachCell(cell => {
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1AA4BD" }
+    };
+
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" }
+    };
+  });
+
+  let no = 1;
+
+  // ======================
+  // DATA ROWS
+  // ======================
   for(const i of items){
 
-    let row=ws.addRow([no++,i.name,""]);
+    let row = ws.addRow([no++, i.name, ""]);
 
-    let div=document.createElement("div");
-    document.body.appendChild(div);
-    div.style.position="absolute";
-    div.style.left="-9999px";
+    row.height = 70;
 
-    new QRCode(div,{
-      text:i.name,
-      width:120,
-      height:120
+    row.font = {
+      name: "Khmer OS Battambang",
+      size: 11
+    };
+
+    row.alignment = {
+      horizontal: "center",
+      vertical: "middle"
+    };
+
+    row.eachCell(cell => {
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" }
+      };
     });
 
-    await new Promise(r=>setTimeout(r,300));
+    // ======================
+    // QR GENERATE
+    // ======================
+    let div = document.createElement("div");
+    document.body.appendChild(div);
+    div.style.position = "absolute";
+    div.style.left = "-9999px";
 
-    let canvas=div.querySelector("canvas");
+    new QRCode(div, {
+      text: i.name,
+      width: 120,
+      height: 120
+    });
+
+    await new Promise(r => setTimeout(r, 300));
+
+    let canvas = div.querySelector("canvas");
 
     if(canvas){
-      let img=canvas.toDataURL("image/png");
 
-      let id=wb.addImage({
-        base64:img,
-        extension:"png"
+      let img = canvas.toDataURL("image/png");
+
+      let id = wb.addImage({
+        base64: img,
+        extension: "png"
       });
 
-      ws.addImage(id,{
-        tl:{col:2,row:row.number-1},
-        ext:{width:80,height:80}
+      // ======================
+      // CENTER QR IMAGE
+      // ======================
+      ws.addImage(id, {
+        tl: { col: 2, row: row.number - 1, colOff: 15, rowOff: 10 },
+        ext: { width: 55, height: 55 }
       });
     }
 
     document.body.removeChild(div);
   }
 
-  let buf=await wb.xlsx.writeBuffer();
-  let a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([buf]));
-  a.download="QR_EXPORT.xlsx";
+  // ======================
+  // SUMMARY FOOTER
+  // ======================
+  const summary = ws.addRow([]);
+  const total = ws.addRow([
+    "",
+    "សរុបភ្ញៀវ",
+    items.length
+  ]);
+
+  total.font = {
+    bold: true,
+    size: 12,
+    name: "Khmer OS Battambang"
+  };
+
+  total.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "" }
+  };
+
+  total.alignment = {
+    horizontal: "center",
+    vertical: "middle"
+  };
+
+  total.eachCell(cell => {
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" }
+    };
+  });
+
+  // ======================
+  // EXPORT FILE
+  // ======================
+  const buf = await wb.xlsx.writeBuffer();
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([buf]));
+  a.download = "បញ្ជីឈ្មោះភ្ញៀវ.xlsx";
   a.click();
 }
 db.collection("qr_payments")
@@ -533,8 +854,55 @@ db.collection("qr_payments")
   document.getElementById("totalUSD").innerText = totalUSD.toLocaleString();
   document.getElementById("totalKHR").innerText = totalKHR.toLocaleString();
 
+// CALL CHART
+renderCharts(
+  dataList.length,
+  count,
+  totalUSD,
+  totalKHR
+);
 });
+let barChart, pieChart;
 
+function renderCharts(totalQR, totalList, totalUSD, totalKHR){
+
+  // Destroy old charts (important)
+  if(barChart) barChart.destroy();
+  if(pieChart) pieChart.destroy();
+
+  // ===== BAR CHART =====
+  barChart = new Chart(document.getElementById("barChart"), {
+    type: "bar",
+    data: {
+      labels: ["ភ្ញៀវសរុប", "ភ្ញៀវចងដៃ"],
+      datasets: [{
+        label: "ចំនួន",
+        data: [totalQR, totalList]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+
+  // ===== PIE CHART =====
+  pieChart = new Chart(document.getElementById("pieChart"), {
+    type: "pie",
+    data: {
+      labels: ["ដុល្លារ", "រៀល"],
+      datasets: [{
+        data: [totalUSD, totalKHR]
+      }]
+    },
+    options: {
+      responsive: true
+    }
+  });
+
+}
 </script>
 
 </body>
